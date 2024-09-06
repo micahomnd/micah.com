@@ -36,8 +36,20 @@ export async function markdownToHTML(markdown: string) {
   return p.toString();
 }
 
-export async function getPost(slug: string) {
-  const filePath = path.join("content", `${slug}.mdx`);
+export async function getBlogPost(slug: string) {
+  const filePath = path.join("content/blog", `${slug}.mdx`);
+  let source = fs.readFileSync(filePath, "utf-8");
+  const { content: rawContent, data: metadata } = matter(source);
+  const content = await markdownToHTML(rawContent);
+  return {
+    source: content,
+    metadata,
+    slug,
+  };
+}
+
+export async function getProjectPost(slug: string) {
+  const filePath = path.join("content/projects", `${slug}.mdx`);
   let source = fs.readFileSync(filePath, "utf-8");
   const { content: rawContent, data: metadata } = matter(source);
   const content = await markdownToHTML(rawContent);
@@ -53,7 +65,9 @@ async function getAllPosts(dir: string) {
   return Promise.all(
     mdxFiles.map(async (file) => {
       let slug = path.basename(file, path.extname(file));
-      let { metadata, source } = await getPost(slug);
+      let { metadata, source } = dir.includes('projects') 
+        ? await getProjectPost(slug)
+        : await getBlogPost(slug);
       return {
         metadata,
         slug,
@@ -63,6 +77,10 @@ async function getAllPosts(dir: string) {
   );
 }
 
+export async function getProjectPosts() {
+  return getAllPosts(path.join(process.cwd(), "content/projects"))
+}
+
 export async function getBlogPosts() {
-  return getAllPosts(path.join(process.cwd(), "content"));
+  return getAllPosts(path.join(process.cwd(), "content/blog"));
 }
